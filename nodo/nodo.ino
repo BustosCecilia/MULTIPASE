@@ -12,8 +12,7 @@ Copyrights by vonPongrac
 // Include librarys
 #include <SPI.h>
 #include <MFRC522.h>  // RFID module library
-#include <RTClib.h>  // RTC library
-#include <Wire.h>  // i2C/1-wire library
+
 #include <SD.h>  // SD card library
 #include <Ethernet.h>  // Etrhenret library
 
@@ -21,32 +20,26 @@ Copyrights by vonPongrac
 #define SS_PIN		7  // Slave Select pine for RFID module
 
 MFRC522 mfrc522(SS_PIN, RST_PIN);  // define RFID reader class
-RTC_DS1307 RTC;  // define RTC class
 
 byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED }; // MAC address 
 IPAddress ip(192, 168, 1, 177); // IP address
 EthernetServer server(80); // define server class in port 80 - HTTP port
 
-int buzzer = 8;  // speaker or buzzer on pin 8
-int led_pos = 3; // green LED on pin 3
-int led_neg = 2; // red LED on pin 2
 String UID_tagA = "856a8b45";  // UID of tag that we are using
-unsigned int MinsA = 0, HoursA = 0;  // working minutes and hours for tag A
+
 String readTag = "";  
 int readCard[4];
 short UIDs_No = 1;
 boolean TimeFlag[2] = {false, false};
-DateTime arrival[2];  // tiem class for arrival
-DateTime departure[2];  // time class for departure
+
 int LastMonth=0;  // working hours till now in a month
 char DataRead=0;
 
 // Declaration of the functions
-void redLED(); // red LED on
-void greenLED(); // green LED + buzzer on
+
 int getID();  // read tag
 boolean checkTag();  // check if tag is unknown
-void errorBeep();  // error while reading (unknown tag)
+
 void StoreData();  // store data to microSD
 
 File myFile; // class file for reading/writing to file on SD card
@@ -57,43 +50,36 @@ void setup() {
   Serial.begin(9600); // for testing and debugging
   SPI.begin();  // run SPI library first; if not, RFID will not work
   mfrc522.PCD_Init();  // initializing RFID, start RFID library
- // Wire.begin();  // start i2c library; if not, RTC will not work
-  //RTC.begin();  // start RTC library
-  //RTC.adjust(DateTime(__DATE__, __TIME__));  // set RTC time to compiling time
+ 
   Ethernet.begin(mac, ip);  // start Ethernet library 
   server.begin();  // start server 
   Serial.print("server is at ");
   Serial.println(Ethernet.localIP());
   SD.begin(4);  // start SD library
-// setting DI/O
-  pinMode(led_pos, OUTPUT);
-  pinMode(led_neg, OUTPUT);
+
 }
 
 // MAIN PROGRAM
 void loop() {
   int succesRead = getID(); // read RFID tag
   if(succesRead==1){ // if RFID read was succesful
-    //greenLED();
     if (checkTag()){ // if tag is known, store data
-      greenLED();
-      StoreData();
+      //StoreData();
     } else { // beeb an error; if new tag, then exit
-      errorBeep();
+      //errorBeep();
     }
   } else {
-    redLED();
+   // redLED();
   }
   // Web server
   EthernetClient client = server.available();  // check for HTTP request
   if (client) { // if HTTP request is available
-//    Serial.println("new client");
+    Serial.println("new client");
     // an http request ends with a blank line
     boolean currentLineIsBlank = true;
     while (client.connected()) {
       if (client.available()) {
         char c = client.read();
- //       Serial.write(c);
         // if you've gotten to the end of the line (received a newline
         // character) and the line is blank, the http request has ended,
         // so you can send a reply
