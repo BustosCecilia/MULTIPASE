@@ -13,7 +13,7 @@ Copyrights by vonPongrac
 #include <SPI.h>
 #include <MFRC522.h>  // RFID module library
 
-#include <SD.h>  // SD card library
+
 #include <Ethernet.h>  // Etrhenret library
 
 #define RST_PIN		6  // RST pin for RFID module
@@ -25,24 +25,12 @@ byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED }; // MAC address
 IPAddress ip(192, 168, 1, 177); // IP address
 EthernetServer server(80); // define server class in port 80 - HTTP port
 
-String UID_tagA = "856a8b45";  // UID of tag that we are using
-
 String readTag = "";  
 int readCard[4];
-short UIDs_No = 1;
-boolean TimeFlag[2] = {false, false};
-
-int LastMonth=0;  // working hours till now in a month
-char DataRead=0;
 
 // Declaration of the functions
 
 int getID();  // read tag
-boolean checkTag();  // check if tag is unknown
-
-void StoreData();  // store data to microSD
-
-File myFile; // class file for reading/writing to file on SD card
 
 
 // SETUP
@@ -55,22 +43,13 @@ void setup() {
   server.begin();  // start server 
   Serial.print("server is at ");
   Serial.println(Ethernet.localIP());
-  SD.begin(4);  // start SD library
 
 }
 
 // MAIN PROGRAM
 void loop() {
   int succesRead = getID(); // read RFID tag
-  if(succesRead==1){ // if RFID read was succesful
-    if (checkTag()){ // if tag is known, store data
-      //StoreData();
-    } else { // beeb an error; if new tag, then exit
-      //errorBeep();
-    }
-  } else {
-   // redLED();
-  }
+  
   // Web server
   EthernetClient client = server.available();  // check for HTTP request
   if (client) { // if HTTP request is available
@@ -88,7 +67,7 @@ void loop() {
           client.println("HTTP/1.1 200 OK");
           client.println("Content-Type: text/html");
           client.println("Connection: close");  // the connection will be closed after completion of the response
-        //  client.println("Refresh: 10");  // refresh the page automatically every 5 sec
+          client.println("Refresh: 5");  // refresh the page automatically every 5 sec
           client.println();
           client.println("<!DOCTYPE html>");
           client.println("<html><head><title>Office Atendance Logger</title><style>");
@@ -97,22 +76,10 @@ void loop() {
           client.println("</style></head><body style=\"background-color: #E6E6E6\">");
           client.println("<div class=\"jumbotron\"><div style=\"text-align: center\"> <h1>  Office Atendance Logger </h1> </div> ");
           client.println("</div><div class=\"dataWindow\"><div style=\"text-align: center\"> <h2> User A </h2>");
-          myFile = SD.open("A.txt");
-          if(myFile){
-            
-            while(myFile.available()){
-                client.print("<p>");
-                while(DataRead != 59){
-                  DataRead = (char)myFile.read();
-                  client.print(DataRead);
-            //      client.print(myFile.read());
-                }
-                client.println("</p>");
-                DataRead = 0;
-            }  
-            
-            myFile.close();
-          }
+         // mando dato readTag        
+          client.print("<p>");             
+          client.print(readTag);            
+          client.println("</p>");        
           client.println("</div></body></html>");    
           break;     
         }
@@ -130,41 +97,12 @@ void loop() {
     delay(1);
     // close the connection:
     client.stop();
-//    Serial.println("client disconnected");
+    Serial.println("client disconnected");
   }   
   delay(1000);
 }
 
-// FUNCTIONS
-void redLED(){ // red LED on, green LED off
-  digitalWrite(led_pos, LOW);
-  digitalWrite(led_neg, HIGH);
-}
-
-void greenLED(){ // red LED off, green LED on
-  digitalWrite(led_pos, HIGH);
-  digitalWrite(led_neg, LOW);
-  tone(buzzer, 440, 50); // sound; frequency of tone: 440 Hz, duration of tone: 50 ms
-}
-
-boolean checkTag(){ // check if tag is unknown
-  if(readTag == UID_tagA){UIDs_No = 1; return true;}
-//  else if(readTag == UID_tagB){UIDs_No = 2; return true;}
-  else {return false;}
-}
-
-void errorBeep(){ // error option
-  digitalWrite(led_pos, LOW);
-  digitalWrite(led_neg, LOW);
-  delay(150);
-  digitalWrite(led_neg, HIGH);
-  tone(buzzer, 440, 50);
-  delay(150);
-  digitalWrite(led_neg, LOW);
-  delay(150);
-  digitalWrite(led_neg, HIGH);
-  tone(buzzer, 440, 50);
-}
+// FUNCIONES
 
 int getID() { // Read RFID
     // Getting ready for Reading PICCs
@@ -185,57 +123,9 @@ int getID() { // Read RFID
     Serial.print(readCard[i], HEX);
     readTag=readTag+String(readCard[i], HEX);
   }
-  // Serial.println(readTag);
-//  Serial.println("");
+
   mfrc522.PICC_HaltA(); // Stop reading
   return 1;
 }
 
-void StoreData(){ // calculate and store data to SD card
-  DateTime time = RTC.now(); // read time from RTC
-  if(LastMonth != time.month()){ // check if there is a new month
-    LastMonth = time.month();
-    SD.remove("hoursA.txt");
-  }
-  switch(UIDs_No){ // this is set for multiple tags, as of right now is made only for one tag
-    case 1:
-      if(TimeFlag[0]){ // departure
-        departure[0] = time;  // save departure time
-        // calculate working hours and minutes
-        int dh = abs(departure[0].hour()-arrival[0].hour()); 
-        int dm = abs(departure[0].minute()-arrival[0].minute()); 
-        unsigned int work = dh*60 + dm; // working hours in minutes
-        MinsA = MinsA + work; // add working hours in minutes to working hours from this month
-        HoursA = (int)MinsA/60; // calculate working hours from minutes
-        myFile = SD.open("A.txt", FILE_WRITE); // open file with history and write to it
-        if(myFile){ // format = " MM-DD-YYYY hh:mm (arrival), hh:mm (departure), hh (working hours today), hh (working hours this month);
-          myFile.print(arrival[0].month(),DEC);
-          myFile.print("-");
-          myFile.print(arrival[0].day(),DEC);
-          myFile.print("-");
-          myFile.print(arrival[0].year(),DEC);
-          myFile.print(" ");
-          myFile.print(arrival[0].hour(),DEC);
-          myFile.print(":");
-          myFile.print(arrival[0].minute(),DEC);
-          myFile.print(", ");
-          myFile.print(departure[0].hour(),DEC);
-          myFile.print(":");
-          myFile.print(departure[0].minute(),DEC);
-          myFile.print(", ");
-          myFile.print(dh,DEC);
-          myFile.print(":");
-          myFile.print(dm,DEC);
-          myFile.print(", ");
-          myFile.print(HoursA,DEC);
-          myFile.print(";");
-          myFile.close();
-        }
-        TimeFlag[0] = false; // set time flag to false
-      } else { // arrival; 
-        arrival[0] = time;  // save time of arrival 
-        TimeFlag[0] = true;  // set time flag to true
-      }
-      break;  
-  }
-}
+
