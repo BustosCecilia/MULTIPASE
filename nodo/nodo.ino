@@ -13,7 +13,7 @@ Copyrights by vonPongrac
 #include <SPI.h>
 #include <MFRC522.h>  // RFID module library
 
-#include <SD.h>  // SD card library
+
 #include <Ethernet.h>  // Etrhenret library
 
 #define RST_PIN		6  // RST pin for RFID module
@@ -43,7 +43,6 @@ void setup() {
   server.begin();  // start server 
   Serial.print("server is at ");
   Serial.println(Ethernet.localIP());
-  SD.begin(4);  // start SD library
 
 }
 
@@ -68,7 +67,7 @@ void loop() {
           client.println("HTTP/1.1 200 OK");
           client.println("Content-Type: text/html");
           client.println("Connection: close");  // the connection will be closed after completion of the response
-        //  client.println("Refresh: 10");  // refresh the page automatically every 5 sec
+          client.println("Refresh: 5");  // refresh the page automatically every 5 sec
           client.println();
           client.println("<!DOCTYPE html>");
           client.println("<html><head><title>Office Atendance Logger</title><style>");
@@ -124,8 +123,7 @@ int getID() { // Read RFID
     Serial.print(readCard[i], HEX);
     readTag=readTag+String(readCard[i], HEX);
   }
-  Serial.println(readTag);
- Serial.println("");
+
   mfrc522.PICC_HaltA(); // Stop reading
   return 1;
 }
