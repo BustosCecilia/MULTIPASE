@@ -15,8 +15,8 @@
  ------------|       |---------------
  wifiesp  gnd|-------|gnd       Arduino 
    debug 3.3v|-------|3.3v      Mega
-  serial   tx|-------|rx pin 19
-           rx|-------|tx pin 18
+  serial   Rx|-------|Rx pin 19
+           Tx|-------|Tx pin 18
  ------------|       |--------------
 
 */
@@ -30,7 +30,7 @@ SoftwareSerial Serial1(19, 18); // RX, TX
 #endif
 
 char ssid[] = "SCHAUFELE";            // your network SSID (name)
-char pass[] = "32797989";        // your network password
+char pass[] = "51269340";        // your network password
 int status = WL_IDLE_STATUS;     // the Wifi radio's status
 int reqCount = 0;                // number of requests received
 
@@ -127,12 +127,13 @@ void escuchaClientes(void){
             "\r\n");
           client.print("<!DOCTYPE HTML>\r\n");
           client.print("<html>\r\n");
-          client.print("<h1>Hello World!</h1>\r\n");
+          client.print("<h1>TE AMO CULITO!</h1>\r\n");
           client.print("Requests received: ");
           client.print(++reqCount);
           client.print("<br>\r\n");
-          client.print("Analog input A0: ");
-          client.print(analogRead(0));
+          client.print("DOMINGO");
+          //client.print("Analog input A0: ");
+          //client.print(analogRead(0));
           client.print("<br>\r\n");
           client.print("</html>\r\n");
           break;
