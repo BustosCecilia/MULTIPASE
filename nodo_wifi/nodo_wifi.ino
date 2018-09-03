@@ -7,31 +7,56 @@
  to the Serial monitor. From there, you can open that address in a web browser
  to display the web page.
  The web page will be automatically refreshed each 20 seconds.
+ --------------------------------------------
+ Servidor web que se conecta a una SSID con un PASS y muestra una pagina web en
+ la ip que se le asigne por DHCP.
+ Se conecta el puerto serie de debug del módulo wifi al serial rx19 y tx18
+ del arduino mega según el esquema:
+ ------------|       |---------------
+ wifiesp  gnd|-------|gnd       Arduino 
+   debug 3.3v|-------|3.3v      Mega
+  serial   tx|-------|rx pin 19
+           rx|-------|tx pin 18
+ ------------|       |--------------
 
- For more details see: http://yaab-arduino.blogspot.com/p/wifiesp.html
 */
 
 #include "WiFiEsp.h"
 
-// Emulate Serial1 on pins 6/7 if not present
+// Emulate Serial1 if not present
 #ifndef HAVE_HWSERIAL1
 #include "SoftwareSerial.h"
 SoftwareSerial Serial1(19, 18); // RX, TX
 #endif
 
-char ssid[] = "domingo";            // your network SSID (name)
+char ssid[] = "SCHAUFELE";            // your network SSID (name)
 char pass[] = "32797989";        // your network password
 int status = WL_IDLE_STATUS;     // the Wifi radio's status
 int reqCount = 0;                // number of requests received
 
 WiFiEspServer server(80);
 
+//---declaración de funciones------
+void ESPinit(void);
+void printWifiStatus(void);
+void escuchaClientes(void);
 
-void setup()
-{
+void setup(){
   // initialize serial for debugging
   Serial.begin(115200);
-  // initialize serial for ESP module
+  
+  ESPinit();
+}
+
+
+void loop(){
+  // listen for incoming clients
+	escuchaClientes();
+}
+
+
+void ESPinit(void){
+	// initialize serial for ESP module
   Serial1.begin(115200);
   // initialize ESP module
   WiFi.init(&Serial1);
@@ -58,10 +83,25 @@ void setup()
   server.begin();
 }
 
+void printWifiStatus(void){
+  // print the SSID of the network you're attached to
+  Serial.print("SSID: ");
+  Serial.println(WiFi.SSID());
 
-void loop()
-{
-  // listen for incoming clients
+  // print your WiFi shield's IP address
+  IPAddress ip = WiFi.localIP();
+  Serial.print("IP Address: ");
+  Serial.println(ip);
+  
+  // print where to go in the browser
+  Serial.println();
+  Serial.print("To see this page in action, open a browser to http://");
+  Serial.println(ip);
+  Serial.println();
+}
+
+void escuchaClientes(void){
+ // listen for incoming clients
   WiFiEspClient client = server.available();
   if (client) {
     Serial.println("New client");
@@ -114,23 +154,4 @@ void loop()
     client.stop();
     Serial.println("Client disconnected");
   }
-}
-
-
-void printWifiStatus()
-{
-  // print the SSID of the network you're attached to
-  Serial.print("SSID: ");
-  Serial.println(WiFi.SSID());
-
-  // print your WiFi shield's IP address
-  IPAddress ip = WiFi.localIP();
-  Serial.print("IP Address: ");
-  Serial.println(ip);
-  
-  // print where to go in the browser
-  Serial.println();
-  Serial.print("To see this page in action, open a browser to http://");
-  Serial.println(ip);
-  Serial.println();
 }
