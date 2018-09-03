@@ -21,7 +21,7 @@
 // Emulate Serial1 on pins 6/7 if not present
 #ifndef HAVE_HWSERIAL1
 #include "SoftwareSerial.h"
-SoftwareSerial Serial1(6, 7); // RX, TX
+SoftwareSerial Serial1(19, 18); // RX, TX
 #endif
 
 //----prototipo de funciones-------
@@ -42,39 +42,17 @@ void setup()
 {
   // initialize serial for debugging
   Serial.begin(115200);
-  ESPinit();
+  ESPinit(); //se conecta a la red de WIFI
 
-  Serial.println();
-  Serial.println("Starting connection to server...");
-  // if you get a connection, report back via serial
-  if (client.connect(server, 80)) {
-    Serial.println("Connected to server");
-    // Make a HTTP request
-    client.println("GET /asciilogo.txt HTTP/1.1");
-    client.println("Host: arduino.cc");
-    client.println("Connection: close");
-    client.println();
-  }
+  //post();
 }
 
 void loop()
 {
-  // if there are incoming bytes available
-  // from the server, read them and print them
-  while (client.available()) {
-    char c = client.read();
-    Serial.write(c);
-  }
-
-  // if the server's disconnected, stop the client
-  if (!client.connected()) {
-    Serial.println();
-    Serial.println("Disconnecting from server...");
-    client.stop();
-
-    // do nothing forevermore
-    while (true);
-  }
+                  //leo tarjetas
+  
+  post();         //hago un post
+  postResponse(); //veo lo que me contesta el server
 }
 
   void ESPinit(){
@@ -121,3 +99,37 @@ void printWifiStatus()
   Serial.print(rssi);
   Serial.println(" dBm");
 }
+
+void post(void){
+    Serial.println();
+  Serial.println("Starting connection to server...");
+  // if you get a connection, report back via serial
+  if (client.connect(server, 80)) {   //imprime "[WiFiEsp] Connecting to arduino.cc"
+    Serial.println("Connected to server");
+    // Make a HTTP request
+    client.println("GET /asciilogo.txt HTTP/1.1");
+    client.println("Host: arduino.cc");
+    client.println("Connection: close");
+    client.println();
+  }
+}
+
+void postResponse(){
+  // if there are incoming bytes available
+  // from the server, read them and print them
+  while (client.available()) {
+    char c = client.read();
+    Serial.write(c);
+  }
+
+  // if the server's disconnected, stop the client
+  if (!client.connected()) {
+    Serial.println();
+    Serial.println("Disconnecting from server...");
+    client.stop();
+
+    // do nothing forevermore
+    //while (true);
+  }
+}
+
