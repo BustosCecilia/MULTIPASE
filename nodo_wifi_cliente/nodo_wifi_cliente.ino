@@ -5,7 +5,7 @@
  perform a simple web search.
 
  For more details see: http://yaab-arduino.blogspot.com/p/wifiesp-example-client.html
--------------------------------------
+--------------conexión wifi-----------------------
   Se conecta el puerto serie de debug del módulo wifi al serial rx19 y tx18
  del arduino mega según el esquema:
  ------------|       |---------------
@@ -14,22 +14,54 @@
   serial   Rx|-------|Rx pin 19
            Tx|-------|Tx pin 18
  ------------|       |--------------
+
+--------------conexión rfid-----------------------
+ --------------|       |---------------
+ rfid-rc522    |       |        Arduino 
+    spi       1|-------|12/50     Mega
+    ports     2|-------|
+     ___      3|-------|13/
+miso|1|2|vcc  4|-------|11/
+sck |3|4|mosi 5|-------|
+rst |5|6|gnd  6|-------|
+          rst 9|-------|9
+          ss 10|-------|8
+ --------------|       |--------------
+
+ ALT+Q para DOXIGEN
 */
-
+//LIBRERIAS WIFI
 #include "WiFiEsp.h"
+//LIBRERIAS RFID
+#include <SPI.h>
+#include <MFRC522.h>
 
-// Emulate Serial1 on pins 6/7 if not present
+// Emulate Serial1 on pins RX, TX if not present
 #ifndef HAVE_HWSERIAL1
 #include "SoftwareSerial.h"
 SoftwareSerial Serial1(19, 18); // RX, TX
 #endif
 
+#define SS_PIN 8
+#define RST_PIN 9
+MFRC522 rfid(SS_PIN, RST_PIN); // Instance of the class
+
+
 //----prototipo de funciones-------
+void RFIDinit(void);
+void ESPinit(void);
 void printWifiStatus(void);
+void post(void);
+void post(String code);
+void postResponse(void);
 
 //--------variables globales--------
-char ssid[] = "SCHAUFELE";            // your network SSID (name)
-char pass[] = "51269340";        // your network password
+char ssid[] = "domingo";         // your network SSID (name)
+char pass[] = "32797989";        // your network password
+//char ssid[] = "SCHAUFELE";     // your network SSID (name)
+//char pass[] = "51269340";      // your network password
+//char ssid[] = "mingo";         // your network SSID (name)
+//char pass[] = "1234567890x";   // your network password
 int status = WL_IDLE_STATUS;     // the Wifi radio's status
 
 char server[] = "arduino.cc";
@@ -38,25 +70,44 @@ char server[] = "arduino.cc";
 WiFiEspClient client;
 
 
-void setup()
-{
+/**
+ * @brief      { function_description }
+ */
+void setup(){
   // initialize serial for debugging
   Serial.begin(115200);
-  ESPinit(); //se conecta a la red de WIFI
+  while (!Serial);    // Do nothing if no serial port is opened (added for Arduinos based on ATMEGA32U4)
 
-  //post();
+  RFIDinit(); //inicializa el rfid
+  ESPinit();  //se conecta a la red de WIFI
 }
 
+/**
+ * @brief      { function_description }
+ */
 void loop()
 {
-                  //leo tarjetas
+  readTag();      //leo tarjetas
   
-  post();         //hago un post
+  //post();         //hago un post
+  post();
   postResponse(); //veo lo que me contesta el server
 }
 
-  void ESPinit(){
-   // initialize serial for ESP module
+/**
+ * @brief      { function_description }
+ */
+void RFIDinit(void){
+  SPI.begin();        // Init SPI bus
+  //rfid.PCD_Init(SS_PIN, RST_PIN); // Init MFRC522 card
+  rfid.PCD_Init(); // Init MFRC522 card
+  Serial.print(F("Reader "));
+  rfid.PCD_DumpVersionToSerial();
+}
+
+//se conecta a la red de WIFI
+void ESPinit(){
+  // initialize serial for ESP module
   Serial1.begin(115200);
   // initialize ESP module
   WiFi.init(&Serial1);
@@ -82,8 +133,55 @@ void loop()
   printWifiStatus();
 }
 
-void printWifiStatus()
-{
+/**
+ * @brief      Lee un tag.
+ *
+ * @return     Un string que contiene el valor del tag.
+ */
+void readTag(void){
+//const char * readTag(void){
+  boolean cardRead=false;
+  while(!cardRead){
+    // Look for new cards && Verify if the NUID has been readed
+    if (rfid.PICC_IsNewCardPresent() && rfid.PICC_ReadCardSerial()) {
+      // Show some details of the PICC (that is: the tag/card)
+      Serial.print(F("Card UID:"));
+      //dump_byte_array(rfid.uid.uidByte, rfid.uid.size); //parece que esto lo imprime
+      
+
+      for (int i=0; i<rfid.uid.size;i++){
+        Serial.print(rfid.uid.uidByte[i]);
+        Serial.print(" ");
+      }//imprime cadena de enteros
+      printHex(rfid.uid.uidByte, rfid.uid.size);//imprime en heza
+
+      
+      Serial.println();
+      Serial.print(F("PICC type: "));
+      MFRC522::PICC_Type piccType = rfid.PICC_GetType(rfid.uid.sak);
+      Serial.println(rfid.PICC_GetTypeName(piccType));
+
+      // Halt PICC
+      rfid.PICC_HaltA();
+      // Stop encryption on PCD
+      rfid.PCD_StopCrypto1();
+      cardRead=true;
+    } //if (mfrc522[reader].PICC_IsNewC
+
+  }
+  //  return nuidPICC
+}
+void printHex(byte *buffer, byte bufferSize) {
+  for (byte i = 0; i < bufferSize; i++) {
+    Serial.print(buffer[i] < 0x10 ? " 0" : " ");
+    Serial.print(buffer[i], HEX);
+  }
+}
+
+/**
+ * @brief      { function_description }
+ */
+void printWifiStatus(){
   // print the SSID of the network you're attached to
   Serial.print("SSID: ");
   Serial.println(WiFi.SSID());
@@ -100,8 +198,10 @@ void printWifiStatus()
   Serial.println(" dBm");
 }
 
-void post(void){
-    Serial.println();
+//hago un post
+
+void post(){
+  Serial.println();
   Serial.println("Starting connection to server...");
   // if you get a connection, report back via serial
   if (client.connect(server, 80)) {   //imprime "[WiFiEsp] Connecting to arduino.cc"
@@ -114,17 +214,39 @@ void post(void){
   }
 }
 
+ void post(String code){
+  String PostData="codigo_llave="+code+"&id_acciones=1&id_espacios=1&id_estado=1&timestamp=2018-01-19 03:15:05&hash=q&boton=Actualizar";
+  int lenth=PostData.length();
+  a:    // if you get a connection, report back via serial:
+  if (client.connect(server, 8000)) {
+    Serial.println("connected");
+    // Make a HTTP request:
+    client.println("POST /Multipase/Accesos/ HTTP/1.1");
+    client.println("Content-Type: application/x-www-form-urlencoded");
+    client.println("Content-Length: ");
+    client.print("Connection: close");
+    client.println(lenth);
+    client.println();
+    client.println(PostData);
+  } else {
+    // if you didn't get a connection to the server:
+    Serial.println("connection failed");
+    goto a;
+  }
+}
+
+
+//veo lo que me contesta el server
 void postResponse(){
   // if there are incoming bytes available
   // from the server, read them and print them
   while (client.available()) {
-    char c = client.read();
+    char c = client.read(); //ACÁ HAY QUE PARSEAR Y VER QUE CONTESTA EL SERVER
     Serial.write(c);
   }
 
   // if the server's disconnected, stop the client
   if (!client.connected()) {
-    Serial.println();
     Serial.println("Disconnecting from server...");
     client.stop();
 
