@@ -35,7 +35,7 @@ rst |5|6|gnd  6|-------|
 //LIBRERIAS RFID
 #include <SPI.h>
 #include <MFRC522.h>
-
+#include <stdlib.h>
 // Emulate Serial1 on pins RX, TX if not present
 #ifndef HAVE_HWSERIAL1
 #include "SoftwareSerial.h"
@@ -68,7 +68,8 @@ char server[] = "arduino.cc";
 
 // Initialize the Ethernet client object
 WiFiEspClient client;
-
+// variable string
+String cadena="";
 
 /**
  * @brief      { function_description }
@@ -152,9 +153,14 @@ void readTag(void){
       for (int i=0; i<rfid.uid.size;i++){
         Serial.print(rfid.uid.uidByte[i]);
         Serial.print(" ");
+        cadena=cadena+rfid.uid.uidByte[i];
+        
       }//imprime cadena de enteros
-      printHex(rfid.uid.uidByte, rfid.uid.size);//imprime en heza
-
+     printHex(rfid.uid.uidByte, rfid.uid.size);//imprime en heza
+     //imprime la cadena en decimal que voy a mandar a la base de datos
+      Serial.println("cadena: ");
+      Serial.println(cadena);
+     
       
       Serial.println();
       Serial.print(F("PICC type: "));
