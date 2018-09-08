@@ -64,12 +64,13 @@ char pass[] = "32797989";        // your network password
 //char pass[] = "1234567890x";   // your network password
 int status = WL_IDLE_STATUS;     // the Wifi radio's status
 
-char server[] = "arduino.cc";
+//char server[] = "arduino.cc";
+IPAddress server(192,168,1,109);
 
 // Initialize the Ethernet client object
 WiFiEspClient client;
 // variable string
-String cadena="";
+//String cadena="";
 
 /**
  * @brief      { function_description }
@@ -88,10 +89,10 @@ void setup(){
  */
 void loop()
 {
-  readTag();      //leo tarjetas
-  
+ // Serial.println(readTag());      //leo tarjetas
+  String code=readTag();
   //post();         //hago un post
-  post();
+  post(code);
   postResponse(); //veo lo que me contesta el server
 }
 
@@ -139,30 +140,18 @@ void ESPinit(){
  *
  * @return     Un string que contiene el valor del tag.
  */
-void readTag(void){
-//const char * readTag(void){
+String readTag(void){
+  String cadena="";
   boolean cardRead=false;
   while(!cardRead){
     // Look for new cards && Verify if the NUID has been readed
     if (rfid.PICC_IsNewCardPresent() && rfid.PICC_ReadCardSerial()) {
       // Show some details of the PICC (that is: the tag/card)
       Serial.print(F("Card UID:"));
-      //dump_byte_array(rfid.uid.uidByte, rfid.uid.size); //parece que esto lo imprime
-      
-
       for (int i=0; i<rfid.uid.size;i++){
-        Serial.print(rfid.uid.uidByte[i]);
-        Serial.print(" ");
         cadena=cadena+rfid.uid.uidByte[i];
-        
-      }//imprime cadena de enteros
-     printHex(rfid.uid.uidByte, rfid.uid.size);//imprime en heza
-     //imprime la cadena en decimal que voy a mandar a la base de datos
-      Serial.println("cadena: ");
+      }
       Serial.println(cadena);
-     
-      
-      Serial.println();
       Serial.print(F("PICC type: "));
       MFRC522::PICC_Type piccType = rfid.PICC_GetType(rfid.uid.sak);
       Serial.println(rfid.PICC_GetTypeName(piccType));
@@ -173,9 +162,8 @@ void readTag(void){
       rfid.PCD_StopCrypto1();
       cardRead=true;
     } //if (mfrc522[reader].PICC_IsNewC
-
   }
-  //  return nuidPICC
+    return cadena;
 }
 void printHex(byte *buffer, byte bufferSize) {
   for (byte i = 0; i < bufferSize; i++) {
@@ -206,34 +194,23 @@ void printWifiStatus(){
 
 //hago un post
 
-void post(){
-  Serial.println();
-  Serial.println("Starting connection to server...");
-  // if you get a connection, report back via serial
-  if (client.connect(server, 80)) {   //imprime "[WiFiEsp] Connecting to arduino.cc"
-    Serial.println("Connected to server");
-    // Make a HTTP request
-    client.println("GET /asciilogo.txt HTTP/1.1");
-    client.println("Host: arduino.cc");
-    client.println("Connection: close");
-    client.println();
-  }
-}
-
  void post(String code){
   String PostData="codigo_llave="+code+"&id_acciones=1&id_espacios=1&id_estado=1&timestamp=2018-01-19 03:15:05&hash=q&boton=Actualizar";
+  Serial.println(PostData);
   int lenth=PostData.length();
+  Serial.println(lenth);
   a:    // if you get a connection, report back via serial:
   if (client.connect(server, 8000)) {
     Serial.println("connected");
     // Make a HTTP request:
     client.println("POST /Multipase/Accesos/ HTTP/1.1");
     client.println("Content-Type: application/x-www-form-urlencoded");
-    client.println("Content-Length: ");
-    client.print("Connection: close");
+    client.print("Content-Length: ");
     client.println(lenth);
+    client.println("Connection: close");
     client.println();
     client.println(PostData);
+    client.println();
   } else {
     // if you didn't get a connection to the server:
     Serial.println("connection failed");
@@ -250,7 +227,6 @@ void postResponse(){
     char c = client.read(); //ACÁ HAY QUE PARSEAR Y VER QUE CONTESTA EL SERVER
     Serial.write(c);
   }
-
   // if the server's disconnected, stop the client
   if (!client.connected()) {
     Serial.println("Disconnecting from server...");
