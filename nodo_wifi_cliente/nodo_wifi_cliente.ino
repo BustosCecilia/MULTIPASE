@@ -54,6 +54,7 @@ void printWifiStatus(void);
 void post(void);
 void post(String code);
 void postResponse(void);
+void LedInit(void);
 
 //--------variables globales--------
 char ssid[] = "domingo";         // your network SSID (name)
@@ -65,23 +66,28 @@ char pass[] = "32797989";        // your network password
 int status = WL_IDLE_STATUS;     // the Wifi radio's status
 
 //char server[] = "arduino.cc";
-IPAddress server(192,168,1,109);
+IPAddress server(192,168,1,105);
 
 // Initialize the Ethernet client object
 WiFiEspClient client;
 // variable string
 //String cadena="";
-
+const int ledRojo = 43;// pin 43
+const int ledVerde = 41;//pin 41
 /**
  * @brief      { function_description }
  */
 void setup(){
+ // LedInit();  //definir pin como salida
+  digitalWrite(ledRojo , HIGH);
+  digitalWrite(ledVerde , HIGH);
   // initialize serial for debugging
   Serial.begin(115200);
   while (!Serial);    // Do nothing if no serial port is opened (added for Arduinos based on ATMEGA32U4)
-
   RFIDinit(); //inicializa el rfid
   ESPinit();  //se conecta a la red de WIFI
+  digitalWrite(ledRojo , LOW);
+  digitalWrite(ledVerde , LOW);
 }
 
 /**
@@ -196,9 +202,9 @@ void printWifiStatus(){
 
  void post(String code){
   String PostData="codigo_llave="+code+"&id_acciones=1&id_espacios=1&id_estado=1&timestamp=2018-01-19 03:15:05&hash=q&boton=Actualizar";
-  Serial.println(PostData);
+  //Serial.println(PostData);
   int lenth=PostData.length();
-  Serial.println(lenth);
+ // Serial.println(lenth);
   a:    // if you get a connection, report back via serial:
   if (client.connect(server, 8000)) {
     Serial.println("connected");
@@ -235,5 +241,13 @@ void postResponse(){
     // do nothing forevermore
     //while (true);
   }
+ 
 }
+void LedInit(){
+  pinMode(ledRojo , OUTPUT);  //definir pin como salida
+  pinMode(ledVerde , OUTPUT);  //definir pin como salida  
+}
+
+
+
 
