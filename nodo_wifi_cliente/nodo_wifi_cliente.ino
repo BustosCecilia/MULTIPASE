@@ -33,15 +33,12 @@ rst |5|6|gnd  6|-------|
 //////////////////////////////////////////////////////////////////////////
 PAGINAS LIBRERIA HTTP:https://arduino.stackexchange.com/questions/45625/simple-get-request-with-esp8266httpclient
 https://github.com/arduino-libraries/ArduinoHttpClient/blob/master/examples/SimplePost/SimplePost.ino
-
-////////////////////////////////////////////////////////////////////////////
-una vez que recibe la autorizacion se tiene que fijar en el estado del sensor si esta abierto o cerrado
 */
 //LIBRERIAS WIFI
 #include "WiFiEsp.h"
 //LIBRERIA HTTP
 #include <ArduinoHttpClient.h>
-
+//#include <HttpClient.h>
 //LIBRERIAS RFID
 #include <SPI.h>
 #include <MFRC522.h>
@@ -65,9 +62,9 @@ void post(void);
 void post(String code);
 void postResponse(void);
 void LedInit(void);
-void estadoCerradura(int statusCode);
+void EncontrarRespuesta(String variable);
 
-int postthttp(String code);
+void postthttp(String code);
 //--------variables globales--------
 char ssid[] = "domingo";         // your network SSID (name)
 char pass[] = "32797989";        // your network password
@@ -82,11 +79,13 @@ IPAddress server(192,168,1,104);
 
 // Initialize the Ethernet client object
 WiFiEspClient client;
-
 // inicializo http//////////////////////////////////////////////////////////
+//
 HttpClient http = HttpClient( client, server, 8000); // instancie un objeto http
+String response;
+int statusCode = 0;
+// variable string
 
-//LED
 const int ledRojo = 43;// pin 43
 const int ledVerde = 41;//pin 41
 
@@ -104,8 +103,9 @@ void setup(){
   ESPinit();  //se conecta a la red de WIFI
   digitalWrite(ledRojo , LOW);
   digitalWrite(ledVerde , LOW);
+//String  v="casa 402 404";
+//  EncontrarRespuesta(v);
 
- 
 }
 
 /**
@@ -113,10 +113,12 @@ void setup(){
  */
 void loop()
 {
- 
-  String code=readTag();//leo tarjetas
-  int statusCode = postthttp(code); // mando UID card a base de datos para validar
-  estadoCerradura(statusCode);
+ // Serial.println(readTag());      //leo tarjetas
+  String code=readTag();
+  //post();         //hago un post
+  //post(code);
+ //postResponse(); //veo lo que me contesta el server
+ postthttp(code);
 }
 
 /**
@@ -129,10 +131,7 @@ void RFIDinit(void){
   Serial.print(F("Reader "));
   rfid.PCD_DumpVersionToSerial();
 }
-/**
- * @brief      { function_description }
- */
- 
+
 //se conecta a la red de WIFI
 void ESPinit(){
   // initialize serial for ESP module
@@ -218,43 +217,81 @@ void printWifiStatus(){
   Serial.println(" dBm");
 }
 
+//hago un post
 
-/**
- * @brief      { function_description }
- */
+ void post(String code){
+  String PostData="codigo_llave="+code+"&id_acciones=1&id_espacios=1&id_estado=1&timestamp=2018-01-19 03:15:05&hash=q&boton=Actualizar";
+  //Serial.println(PostData);
+  int lenth=PostData.length();
+  Serial.println(lenth);
+  
+ 
+  a:    // if you get a connection, report back via serial:
+  if (client.connect(server, 8000)) {
+    Serial.println("connected");
+    // Make a HTTP request:
+    client.println("POST /Multipase/Accesos/ HTTP/1.1");
+    client.println("Content-Type: application/x-www-form-urlencoded");
+    client.print("Content-Length: ");
+    client.println(lenth);
+    client.println("Connection: keep-alive");
+    client.println();
+    client.println(PostData);
+    client.println();
+   
+  } else {
+    // if you didn't get a connection to the server:
+    Serial.println("connection failed");
+    goto a;
+  }
+}
 
+//veo lo que me contesta el server
+void postResponse(){
+  String cadena1="";
+ 
+  // if there are incoming bytes available
+  // from the server, read them and print them
+  while (client.available()) {
+    char c = client.read(); //ACÁ HAY QUE PARSEAR Y VER QUE CONTESTA EL SERVER
+    cadena1=cadena1+c; // cadena donde se guarda la respuesta del server
+    Serial.print(c);
+  }
+  
+  // if the server's disconnected, stop the client
+  if (!client.connected()) {
+    Serial.println("Disconnecting from server...");
+     
+     client.stop();
+     
+    Serial.println("server responde:");
+    Serial.println(cadena1);
+    Serial.println("..........................................................................");
+    // do nothing forevermore
+    //while (true);
+  }
+}
 void LedInit(){
   pinMode(ledRojo , OUTPUT);  //definir pin como salida
   pinMode(ledVerde , OUTPUT);  //definir pin como salida  
 }
 
-/**
- * @brief      { function_description }
- */
- 
-void estadoCerradura(int statusCode){
-   int permiso=statusCode;
+void EncontrarRespuesta(String variable){
    
-   switch (permiso) {
-  case 200:
-    // statements
-    break;
-  case 302:
-    // statements
-    break;
- 
+   int pos=variable.indexOf("402");
+        if (pos>=0) {
+        Serial.print("se ha detectado la palabra contenido en la posicion ");
+        Serial.print(pos);
+    }else{
+        Serial.print("No se ha detectado la palabra contenido en la posicion ");
+      }
 }
- 
-}
-/**
- * @brief      { function_description }
- */
- 
-int postthttp(String code){
+
+void postthttp(String code){
   HttpClient http = HttpClient( client, server, 8000);  // instancie un objeto http
   String postData="codigo_llave="+code+"&id_acciones=1&id_espacios=1&id_estado=1&timestamp=2018-01-19 03:15:05&hash=q&boton=Actualizar";
   String contentType = "application/x-www-form-urlencoded";
-  int statusCode=0;
+
  Serial.println("making POST request");
  http.post("/Multipase/Accesos/", contentType, postData);
 
@@ -263,6 +300,6 @@ int postthttp(String code){
   Serial.print("Status code: ");
   Serial.println(statusCode);
   http.stop();  
-  return statusCode;
+  
   }
 
