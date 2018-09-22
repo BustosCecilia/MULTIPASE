@@ -84,7 +84,7 @@ IPAddress server(192,168,1,104);
 WiFiEspClient client;
 
 // inicializo http//////////////////////////////////////////////////////////
-HttpClient http = HttpClient( client, server, 8000); // instancie un objeto http
+//HttpClient http = HttpClient( client, server, 8000); // instancie un objeto http
 
 //LED
 const int ledRojo = 43;// pin 43
@@ -97,6 +97,8 @@ void setup(){
   LedInit();  //definir pin como salida
   // initialize serial for debugging
   Serial.begin(115200);
+  digitalWrite(ledRojo , HIGH);
+  digitalWrite(ledVerde , HIGH);
   while (!Serial);    // Do nothing if no serial port is opened (added for Arduinos based on ATMEGA32U4)
   RFIDinit(); //inicializa el rfid
   ESPinit();  //se conecta a la red de WIFI
@@ -249,7 +251,8 @@ void estadoCerradura(int statusCode){
     break;
   case 500:
   Serial.println("500 Internal Server Error");
- 
+ digitalWrite(ledRojo , HIGH);
+  digitalWrite(ledVerde , HIGH);
 }
  
 }
@@ -259,7 +262,7 @@ void estadoCerradura(int statusCode){
  
 int postthttp(String code){
   HttpClient http = HttpClient( client, server, 8000);  // instancie un objeto http
-  String postData="codigo_llave="+code+"&id_acciones=1&id_espacios=1&id_estado=1&timestamp=2018-01-19 03:15:05&hash=q&boton=Actualizar";
+  String postData="codigo_llave="+code+"&id_acciones=1&id_espacios=2&id_estado=1&timestamp=2018-01-19 03:15:05&hash=q&boton=Actualizar";
   String contentType = "application/x-www-form-urlencoded";
   int statusCode=0;
  Serial.println("making POST request");
