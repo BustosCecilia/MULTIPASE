@@ -95,8 +95,6 @@ const int ledVerde = 41;//pin 41
  */
 void setup(){
   LedInit();  //definir pin como salida
-  digitalWrite(ledRojo , HIGH);
-  digitalWrite(ledVerde , HIGH);
   // initialize serial for debugging
   Serial.begin(115200);
   while (!Serial);    // Do nothing if no serial port is opened (added for Arduinos based on ATMEGA32U4)
@@ -238,11 +236,19 @@ void estadoCerradura(int statusCode){
    switch (permiso) {
   case 200:
     Serial.println("Permitido, ahora ver accion a seguir al evaluar estado de la cerradura");
-    
+     digitalWrite(ledRojo , LOW);
+     digitalWrite(ledVerde , HIGH);
     break;
   case 302:
       Serial.println("No Permitido");
+      digitalWrite(ledRojo , HIGH);
+      digitalWrite(ledVerde , LOW);
     break;
+  case -2:
+      Serial.println("Servidor desconectado");
+    break;
+  case 500:
+  Serial.println("500 Internal Server Error");
  
 }
  
