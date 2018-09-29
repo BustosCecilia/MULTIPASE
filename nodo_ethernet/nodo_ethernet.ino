@@ -1,3 +1,7 @@
+/**
+ * MULTIPASE Nodo Ethernet
+ */
+
 #include <ArduinoHttpClient.h>
 #include <SPI.h>
 #include <MFRC522.h>  // mfrc522 module library
@@ -5,8 +9,14 @@
 #include <SD.h>  // SD card library
 #include <Ethernet.h>
 
+//----declaración de pines-------
+//RFID
 #define RST_PIN   9  // RST pin for mfrc522 module
 #define SS_PIN    5  // Slave Select pine for mfrc522 module
+//LEDS
+const int ledRojo = 43;// pin 43
+const int ledVerde = 41;//pin 41
+const int buzzer = 45;  // speaker or buzzer on pin 8
 
 //----prototipo de funciones-------
 void mfrc522init(void);
@@ -16,8 +26,13 @@ void LedInit(void);
 void estadoCerradura(int statusCode);
 
 int postthttp(String code);
-//--------variables globales--------
 
+void redLED(); // red LED on
+void greenLED(); // green LED + buzzer on
+void errorBeep();  // error while reading (unknown tag)
+void LEDSoff();
+
+//--------variables globales--------
 MFRC522 mfrc522(SS_PIN, RST_PIN);  // define mfrc522 reader class
 // Enter a MAC address for your controller below.
 // Newer Ethernet shields have a MAC address printed on a sticker on the shield
@@ -36,15 +51,18 @@ IPAddress ip(192, 168, 0, 1);
 EthernetClient client;
 // inicializo http//////////////////////////////////////////////////////////
 HttpClient http = HttpClient( client, server, 8000); // instancie un objeto http
-//LED
-const int ledRojo = 43;// pin 43
-const int ledVerde = 41;//pin 41
+
 
 void setup() {
   /////////setyp wifi
   LedInit();  //definir pin como salida
   digitalWrite(ledRojo , HIGH);
   digitalWrite(ledVerde , HIGH);
+
+  ////------------test leds beep
+
+  ////--------------------------
+    
   // initialize serial for debugging// Open serial communications and wait for port to open:
   Serial.begin(9600);
   while (!Serial) {
@@ -119,34 +137,6 @@ void mfrc522init(void){
 }
 
 /**
- * @brief      Inicializa el wifi, se conecta a la red de WIFI
- * a 115200 Baudios por comunicación Serial1.
- */
-/*
-void ESPinit(){
-  // initialize serial for ESP module
-  Serial1.begin(115200);
-  // initialize ESP module
-  WiFi.init(&Serial1);
-  // check for the presence of the shield
-  if (WiFi.status() == WL_NO_SHIELD) {
-    Serial.println("WiFi shield not present");
-    // don't continue
-    while (true);
-  }
-  // attempt to connect to WiFi network
-  while ( status != WL_CONNECTED) {
-    Serial.print("Attempting to connect to WPA SSID: ");
-    Serial.println(ssid);
-    // Connect to WPA/WPA2 network
-    status = WiFi.begin(ssid, pass);
-  }
-  // you're connected now, so print out the data
-  Serial.println("You're connected to the network");
-  printWifiStatus();
-}
-*/
-/**
  * @brief      Lee un tag.
  *
  * @return     Un string que contiene el valor del tag.
@@ -217,6 +207,7 @@ void printWifiStatus(){
 void LedInit(){
   pinMode(ledRojo , OUTPUT);  //definir pin como salida
   pinMode(ledVerde , OUTPUT);  //definir pin como salida  
+  //pinMode(buzzer, OUTPUT); // Set buzzer as an output
 }
  
 /**
@@ -268,5 +259,74 @@ int postthttp(String code){
   Serial.println(statusCode);
   http.stop();  
   return statusCode;
+}
+
+
+
+void redLED(){ // red LED on, green LED off
+  digitalWrite(ledVerde, LOW);
+  digitalWrite(ledRojo, HIGH);
+}
+
+void greenLED(){ // red LED off, green LED on
+  digitalWrite(ledVerde, HIGH);
+  digitalWrite(ledRojo, LOW);
+  tone(buzzer, 440, 300); // sound; frequency of tone: 440 Hz, duration of tone: 50 ms
+}
+
+void errorBeep(){ // error option
+  redLED();
+  delay(150);
+  tone(buzzer, 523, 300);
+  delay(150);
+  tone(buzzer, 523, 300);
+  LEDSoff();
+}
+
+void LEDSoff(){
+  digitalWrite(ledRojo, LOW);
+  digitalWrite(ledVerde, LOW);
+  noTone(buzzer);
+}
+
+void OKtone () {
+      //generar tono de 440Hz durante 1000 ms
+  digitalWrite(ledVerde , HIGH);
+  digitalWrite(ledRojo , LOW);
+  tone(buzzer, 440,300);
+  //delay(1000);
+ 
+  //detener tono durante 500ms  
+  digitalWrite(ledRojo , HIGH);
+  digitalWrite(ledVerde , LOW);
+  //noTone(buzzer);
+  delay(100);
+ 
+  //generar tono de 523Hz durante 500ms, y detenerlo durante 500ms.
+  digitalWrite(ledRojo , HIGH);
+  digitalWrite(ledVerde , LOW);
+  tone(buzzer, 523, 300);
+ // delay(100);
+}
+
+void noOKtone () {
+    //detener tono durante 500ms  
+  digitalWrite(ledRojo , HIGH);
+  digitalWrite(ledVerde , LOW);
+  //noTone(buzzer);
+  delay(100);
+ 
+  //generar tono de 523Hz durante 500ms, y detenerlo durante 500ms.
+  digitalWrite(ledRojo , HIGH);
+  digitalWrite(ledVerde , LOW);
+  tone(buzzer, 523, 300);
+  delay(100);
+  
+      //generar tono de 440Hz durante 1000 ms
+  digitalWrite(ledVerde , HIGH);
+  digitalWrite(ledRojo , LOW);
+  tone(buzzer, 440,300);
+  //delay(1000);
+
 }
 
