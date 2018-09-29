@@ -262,7 +262,7 @@ void estadoCerradura(int statusCode){
  
 int postthttp(String code){
   HttpClient http = HttpClient( client, server, 8000);  // instancie un objeto http
-  String postData="codigo_llave="+code+"&id_acciones=1&id_espacios=2&id_estado=1&timestamp=2018-01-19 03:15:05&hash=q&boton=Actualizar";
+  String postData="codigo_llave="+code+"&id_acciones=1&id_espacios=2&id_estado=3&timestamp=2018-02-2 03:15:05&hash=q&boton=Actualizar";
   String contentType = "application/x-www-form-urlencoded";
   int statusCode=0;
  Serial.println("making POST request");
