@@ -1,5 +1,35 @@
 /**
  * MULTIPASE Nodo Ethernet
+ * 
+ * ----------esquema sensor interrupt-----------------
+ * Sensor normal cerrado NC configurado con resistencia PULLUP en pin 21
+ * 
+ *                        _vcc
+ *                        |
+ *             R pullup   R     SW
+ *                        |    _|_PUERTA ABIERTA (chequear esto)
+ * Arduino pin 21 ]_______|___.   ._____
+ *                          |___||__|   |
+ *                 filtro      +||      |
+ *               antirrebote    C=1uF   |
+ *                                      |
+ *                                    __|__
+ *                                     ___
+ *                                      _
+ *                                    
+ *                        _vcc
+ *                        |
+ *                        R
+ *                        |       PUERTA CERRADA
+ * Arduino pin 21 ]_______|___._|_._____
+ *                          |___||__|   |
+ *                             +||      |
+ *                              C       |
+ *                                      |
+ *                                    __|__
+ *                                     ___
+ *                                      _                          
+ * ---------------------------------------------------
  */
 
 #include <ArduinoHttpClient.h>
@@ -27,10 +57,10 @@ void estadoCerradura(int statusCode);
 
 int postthttp(String code);
 
-void redLED(); // red LED on
-void greenLED(); // green LED + buzzer on
 void errorBeep();  // error while reading (unknown tag)
 void LEDSoff();
+void OKtone();
+void noOKtone();
 
 //--------variables globales--------
 MFRC522 mfrc522(SS_PIN, RST_PIN);  // define mfrc522 reader class
@@ -54,17 +84,12 @@ HttpClient http = HttpClient( client, server, 8000); // instancie un objeto http
 
 
 void setup() {
-  /////////setyp wifi
-  LedInit();  //definir pin como salida
-  digitalWrite(ledRojo , HIGH);
-  digitalWrite(ledVerde , HIGH);
 
-  ////------------test leds beep
-
-  ////--------------------------
+  LedInit();  
+  OKtone();
     
-  // initialize serial for debugging// Open serial communications and wait for port to open:
-  Serial.begin(9600);
+
+  Serial.begin(9600);  // initialize serial for debugging// Open serial communications and wait for port to open:
   while (!Serial) {
     ; // wait for serial port to connect. Needed for native USB port only
   }
@@ -85,43 +110,25 @@ void setup() {
   delay(1000);
   // print your local IP address:
   printIPAddress();
-  
-  Serial.println("connecting...");
-  ////////////////////7
-  // if you get a connection, report back via serial:
-  if (client.connect(server, 8000)) {
-    Serial.println("connected");
-    // Make a HTTP request:
-    client.println("GET /search?q=arduino HTTP/1.1");
-    client.println("Host: www.google.com");
-    client.println("Connection: close");
-    client.println();
-  } else {
-    // if you didn't get a connection to the server:
-    Serial.println("connection failed");
-  }
 
   digitalWrite(ledRojo , LOW);
   digitalWrite(ledVerde , LOW);
 }
 
-void loop() 
-{
+void loop() {
  
   String code=readTag();//leo tarjetas
   int statusCode = postthttp(code); // mando UID card a base de datos para validar
   estadoCerradura(statusCode);
 }
 
-void printIPAddress()
-{
+void printIPAddress(){
   Serial.print("My IP address: ");
   for (byte thisByte = 0; thisByte < 4; thisByte++) {
     // print the value of each byte of the IP address:
     Serial.print(Ethernet.localIP()[thisByte], DEC);
     Serial.print(".");
   }
-
   Serial.println();
 }
 
@@ -156,7 +163,6 @@ String readTag(void){
       Serial.print(F("PICC type: "));
       MFRC522::PICC_Type piccType = mfrc522.PICC_GetType(mfrc522.uid.sak);
       Serial.println(mfrc522.PICC_GetTypeName(piccType));
-
       // Halt PICC
       mfrc522.PICC_HaltA();
       // Stop encryption on PCD
@@ -178,36 +184,6 @@ void printHex(byte *buffer, byte bufferSize) {
     Serial.print(buffer[i] < 0x10 ? " 0" : " ");
     Serial.print(buffer[i], HEX);
   }
-}
-
-/**
- * @brief      { function_description }
- */
- /*
-void printWifiStatus(){
-  // print the SSID of the network you're attached to
-  Serial.print("SSID: ");
-  Serial.println(WiFi.SSID());
-
-  // print your WiFi shield's IP address
-  IPAddress ip = WiFi.localIP();
-  Serial.print("IP Address: ");
-  Serial.println(ip);
-
-  // print the received signal strength
-  long rssi = WiFi.RSSI();
-  Serial.print("Signal strength (RSSI):");
-  Serial.print(rssi);
-  Serial.println(" dBm");
-}*/
-
-/**
- * @brief      Inicializa los leds indicadores como salida
- */
-void LedInit(){
-  pinMode(ledRojo , OUTPUT);  //definir pin como salida
-  pinMode(ledVerde , OUTPUT);  //definir pin como salida  
-  //pinMode(buzzer, OUTPUT); // Set buzzer as an output
 }
  
 /**
@@ -261,72 +237,62 @@ int postthttp(String code){
   return statusCode;
 }
 
-
-
-void redLED(){ // red LED on, green LED off
-  digitalWrite(ledVerde, LOW);
-  digitalWrite(ledRojo, HIGH);
-}
-
-void greenLED(){ // red LED off, green LED on
-  digitalWrite(ledVerde, HIGH);
-  digitalWrite(ledRojo, LOW);
-  tone(buzzer, 440, 300); // sound; frequency of tone: 440 Hz, duration of tone: 50 ms
+/**
+ * @brief      Inicializa los leds indicadores como salida
+ */
+void LedInit(){
+  pinMode(ledRojo , OUTPUT);  //definir pin como salida
+  pinMode(ledVerde , OUTPUT);  //definir pin como salida  
 }
 
 void errorBeep(){ // error option
-  redLED();
-  delay(150);
-  tone(buzzer, 523, 300);
-  delay(150);
-  tone(buzzer, 523, 300);
-  LEDSoff();
+  digitalWrite(ledRojo , HIGH);
+  tone(buzzer, 440, 200);
+  digitalWrite(ledRojo , LOW);
+  delay(300);
+  digitalWrite(ledRojo , HIGH);
+  tone(buzzer, 440, 200);
+  delay(300);
+  digitalWrite(ledRojo , LOW);
 }
 
 void LEDSoff(){
   digitalWrite(ledRojo, LOW);
   digitalWrite(ledVerde, LOW);
-  noTone(buzzer);
 }
 
 void OKtone () {
-      //generar tono de 440Hz durante 1000 ms
   digitalWrite(ledVerde , HIGH);
   digitalWrite(ledRojo , LOW);
   tone(buzzer, 440,300);
-  //delay(1000);
- 
-  //detener tono durante 500ms  
-  digitalWrite(ledRojo , HIGH);
-  digitalWrite(ledVerde , LOW);
-  //noTone(buzzer);
   delay(100);
- 
-  //generar tono de 523Hz durante 500ms, y detenerlo durante 500ms.
-  digitalWrite(ledRojo , HIGH);
-  digitalWrite(ledVerde , LOW);
   tone(buzzer, 523, 300);
- // delay(100);
+  delay(1000);
+  digitalWrite(ledVerde , LOW);
+  digitalWrite(ledRojo , LOW);
 }
 
 void noOKtone () {
-    //detener tono durante 500ms  
-  digitalWrite(ledRojo , HIGH);
-  digitalWrite(ledVerde , LOW);
-  //noTone(buzzer);
-  delay(100);
- 
-  //generar tono de 523Hz durante 500ms, y detenerlo durante 500ms.
   digitalWrite(ledRojo , HIGH);
   digitalWrite(ledVerde , LOW);
   tone(buzzer, 523, 300);
   delay(100);
-  
-      //generar tono de 440Hz durante 1000 ms
-  digitalWrite(ledVerde , HIGH);
-  digitalWrite(ledRojo , LOW);
   tone(buzzer, 440,300);
-  //delay(1000);
-
+  delay(1000);
+  digitalWrite(ledRojo , LOW);
+  digitalWrite(ledVerde , LOW);
 }
+/*
+ESTADOS
 
+-CERRADA
+  --QUERES ABRIRLA ->PASAS TARJETA
+    ---ATORIZADO->QUEDA CERRADA ->PENDIENTE DE ABRIR
+        ---ABRE LA PUERTA ->ABIERTA
+    ---AUTORIZADO->SE ABRE ->ABIERTA
+    ---NO AUTORIZADO ->CERRADA ->CERRADO
+
+-ABIERTA
+  --QUERES CERRARLA ->PASAS TARJETA
+    ---
+*/
