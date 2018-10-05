@@ -47,15 +47,22 @@
 const int ledRojo = 43;// pin 43
 const int ledVerde = 41;//pin 41
 const int buzzer = 45;  // speaker or buzzer on pin 8
+//ExternalInterrupt
+const int sensor=21;
+volatile boolean estadoSensor=false; //false cerrado; true abierto ??
+boolean estado=false;
 
 //----prototipo de funciones-------
 void mfrc522init(void);
 void ESPinit(void);
 void printWifiStatus(void);
 void LedInit(void);
+void interrupt(void);
+void sensorInit(void);
 void estadoCerradura(int statusCode);
 
 int postthttp(String code);
+int postthttp(void);
 
 void errorBeep();  // error while reading (unknown tag)
 void LEDSoff();
@@ -87,7 +94,7 @@ void setup() {
 
   LedInit();  
   OKtone();
-    
+  sensorInit();
 
   Serial.begin(9600);  // initialize serial for debugging// Open serial communications and wait for port to open:
   while (!Serial) {
@@ -102,7 +109,7 @@ void setup() {
   if (Ethernet.begin(mac) == 0) {
     Serial.println("Failed to configure Ethernet using DHCP");
     // try to congifure using IP address instead of DHCP:
-    Serial.println("Try to congifure using IP address 192.168.0.1");
+    Serial.println("Try to configure using IP address 192.168.0.1");
     Ethernet.begin(mac, ip);
    // while(true);//no hago nada porque no pude ponerme ip
   }
@@ -152,6 +159,14 @@ String readTag(void){
   String cadena="";
   boolean cardRead=false;
   while(!cardRead){
+        //esto lo hago para que sólo entre si se ha cambiado el estado de la cerradura
+    if (estado != estadoSensor){
+      estado = estadoSensor;
+      Serial.println("Ha cambiado el estado de la puerta");
+      int statusCode = postthttp(); // mando UID card a base de datos para validar
+      estadoCerradura(statusCode); //ACÁ DEBERÍA IR OTRA FUNCIÓN estadoCerradura que haga otra cosa VER
+    }
+    
     // Look for new cards && Verify if the NUID has been readed
     if (mfrc522.PICC_IsNewCardPresent() && mfrc522.PICC_ReadCardSerial()) {
       // Show some details of the PICC (that is: the tag/card)
@@ -169,6 +184,7 @@ String readTag(void){
       mfrc522.PCD_StopCrypto1();
       cardRead=true;
     } //if (mfrc522[reader].PICC_IsNewC
+
   }
   return cadena;
 }
@@ -238,11 +254,47 @@ int postthttp(String code){
 }
 
 /**
+  * @brief      función que postea el cambio de estado de la cerradura
+  * de acuerdo al estado del sensor
+  *
+  * @param[in]  code  The code
+  *
+  * @return     { description_of_the_return_value }
+  */ 
+int postthttp(){
+  HttpClient http = HttpClient( client, server, 8000);  // instancie un objeto http
+  String postData="codigo_llave=""&id_acciones=1&id_espacios=1&id_estado=1&timestamp=2018-01-19 03:15:05&hash=q&boton=Actualizar";
+  String contentType = "application/x-www-form-urlencoded";
+  int statusCode=0;
+ Serial.println("making POST request");
+ http.post("/Multipase/Accesos/", contentType, postData);
+
+  // read the status code and body of the response
+  statusCode = http.responseStatusCode();
+  Serial.print("Status code: ");
+  Serial.println(statusCode);
+  http.stop();  
+  return statusCode;
+}
+
+/**
  * @brief      Inicializa los leds indicadores como salida
  */
 void LedInit(){
   pinMode(ledRojo , OUTPUT);  //definir pin como salida
   pinMode(ledVerde , OUTPUT);  //definir pin como salida  
+}
+
+void interrupt(){
+   estadoSensor=!estadoSensor; //El sensor cambió de estado
+}
+
+void sensorInit(){
+  pinMode(sensor,INPUT_PULLUP);
+  //leo estado inicial del sensor para ver cómo está la cerradura
+  estadoSensor=digitalRead(sensor); //devuelve HIGH o LOW
+  estado=estadoSensor;
+  attachInterrupt(digitalPinToInterrupt(sensor), interrupt, CHANGE);
 }
 
 void errorBeep(){ // error option
