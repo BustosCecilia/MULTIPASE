@@ -11,6 +11,7 @@ MultipaseCore::MultipaseCore()
 {
   ledRojo   = 43;// pin 43
   ledVerde  = 41;//pin 41
+  ledAmarillo = 46; // pin 46
   buzzer    = 45;  // speaker or buzzer on pin 8
   //ExternalInterrupt
   //sensor    =21;
@@ -23,6 +24,7 @@ MultipaseCore::MultipaseCore()
 void MultipaseCore::LedInit(){
   pinMode(ledRojo , OUTPUT);  //definir pin como salida
   pinMode(ledVerde , OUTPUT);  //definir pin como salida  
+   pinMode(ledAmarillo, OUTPUT);  //definir pin como salida  
 }
 
 void MultipaseCore::errorBeep(){ // error option
@@ -42,9 +44,13 @@ void MultipaseCore::LEDverde(){ // error option
 void MultipaseCore::LEDrojo(){ // error option
   digitalWrite(ledRojo , HIGH);
 }
+void MultipaseCore::LEDamarillo(){ // error option
+  digitalWrite(ledAmarillo , HIGH);
+}
 void MultipaseCore::LEDSoff(){
   digitalWrite(ledRojo, LOW);
   digitalWrite(ledVerde, LOW);
+   digitalWrite(ledAmarillo, LOW);
 }
 
 void MultipaseCore::OKtone () {

@@ -15,6 +15,7 @@ class MultipaseCore
     //LEDS
    int ledRojo;// pin 43
    int ledVerde;//pin 41
+   int ledAmarillo; // pin 46
    int buzzer;  // speaker or buzzer on pin 8
   //ExternalInterrupt
    //int sensor;
@@ -36,6 +37,7 @@ class MultipaseCore
 	  void LEDSoff(void);
     void LEDverde(void);
     void LEDrojo(void);
+    void LEDamarillo(void);
 	  void OKtone(void);
     void noOKtone(void);
     

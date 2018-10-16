@@ -57,7 +57,7 @@
 */
    
    boolean estado=false;
-
+   int cont_conexion=0; // cuenta la cantidad de veces que no se pudo conectar al contador si llega a 5 que mande un mensaje 
 //----prototipo de funciones-------
 void mfrc522init(void);
 void ESPinit(void);
@@ -191,7 +191,14 @@ String readTag(void){
           break;
         case 3://PA-->ABIERTO
           estadoNodo=1;
-          while(postthttp(estadoNodo)!=200){};
+          while(postthttp(estadoNodo)!=200 ){
+            if(cont_conexion==5){
+              Serial.println("Se interrumpio conexion con servidor, no se cambio estado");
+              cont_conexion=0;
+              break;
+            }
+            cont_conexion++;
+            };
           Serial.println("abierto");
           //prendo led verde
           Core.LEDverde();
@@ -207,16 +214,32 @@ String readTag(void){
           break;
         case 1://ABIERTO--pendiente de ABRIR
           estadoNodo=3;
-          while(postthttp(estadoNodo)!=200){};
+           while(postthttp(estadoNodo)!=200 ){
+            if(cont_conexion==5){
+              Serial.println("Se interrumpio conexion con servidor, no se cambio estado");
+              cont_conexion=0;
+              break;
+            }
+            cont_conexion++;
+            };
           Serial.println("Pendiente de abrir");
           //prendo led amarillo y verde
+          Core.LEDverde();
+          Core.LEDamarillo();
           break;
         case 4://PC-->CERRADO
            estadoNodo=2;
-          while(postthttp(estadoNodo)!=200){};
+           while(postthttp(estadoNodo)!=200 ){
+            if(cont_conexion==5){
+              Serial.println("Se interrumpio conexion con servidor, no se cambio estado");
+              cont_conexion=0;
+              break;
+            }
+            cont_conexion++;
+            };
           Serial.println("Cerrau");
-          Core.LEDrojo();
           //prendo led rojo
+          Core.LEDrojo();
           break;
         case 3://PA-->ABIERTO
           //esto no debería pasar
@@ -278,22 +301,44 @@ void solicitarAccion(String _code){
        switch(estadoNodo){
         case 2://CERRADO-->pendiente de abrir
           estadoNodo=3;
-          while(postthttp(estadoNodo)!=200){};
+           while(postthttp(estadoNodo)!=200 ){
+            if(cont_conexion==5){
+              Serial.println("Se interrumpio conexion con servidor, no se cambio estado");
+              cont_conexion=0;
+              break;
+            }
+            cont_conexion++;
+            };
           Serial.println("Pendiente de abrir");
           Core.OKtone();
           Core.LEDverde();
           break;
         case 1://ABIERTO--pendiente de cerrar
           estadoNodo=4;
-          while(postthttp(estadoNodo)!=200){};
+           while(postthttp(estadoNodo)!=200 ){
+            if(cont_conexion==5){
+              Serial.println("Se interrumpio conexion con servidor, no se cambio estado");
+              cont_conexion=0;
+              break;
+            }
+            cont_conexion++;
+            };
           Serial.println("Pendiente de cerrar");
           //prendo led amarillo y rojo (ceciCode)
           Core.OKtone();
           Core.LEDrojo();
+          Core.LEDamarillo();
           break;
         case 4://PC-->abierto
            estadoNodo=1;
-          while(postthttp(estadoNodo)!=200){};
+           while(postthttp(estadoNodo)!=200 ){
+            if(cont_conexion==5){
+              Serial.println("Se interrumpio conexion con servidor, no se cambio estado");
+              cont_conexion=0;
+              break;
+            }
+            cont_conexion++;
+            };
           Serial.println("Abiertirijillo");
           Core.OKtone();
           Core.LEDverde();
@@ -301,7 +346,14 @@ void solicitarAccion(String _code){
           break;
         case 3://PA-->cerrado
           estadoNodo=2;
-          while(postthttp(estadoNodo)!=200){};
+           while(postthttp(estadoNodo)!=200 ){
+            if(cont_conexion==5){
+              Serial.println("Se interrumpio conexion con servidor, no se cambio estado");
+              cont_conexion=0;
+              break;
+            }
+            cont_conexion++;
+            };
           Serial.println("Cerrau");
           Core.OKtone();
           Core.LEDrojo();
@@ -318,6 +370,9 @@ void solicitarAccion(String _code){
       break;
     case -2:
       Serial.println("Servidor desconectado, mal puesta la ip");//mal puesta la ip
+      break;
+    case -3:
+      Serial.println("Error -3");//mal puesta la ip
       break;
     //case 500:
     default:
