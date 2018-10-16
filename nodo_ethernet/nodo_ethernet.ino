@@ -44,19 +44,19 @@
 #define RST_PIN   9  // RST pin for mfrc522 module
 #define SS_PIN    5  // Slave Select pine for mfrc522 module
 
-   int sensor=21;
-   static volatile boolean estadoSensor=false; //false cerrado; true abierto ??
-   int estadoNodo=4; //me fijo estado actual (empiezo en 4 porque es lo mas seguro)
-   boolean estadoSensorAnterior=false;
+int sensor=21;
+static volatile boolean estadoSensor=false; //false cerrado; true abierto ??
+int estadoNodo=4; //me fijo estado actual (empiezo en 4 porque es lo mas seguro)
+boolean estadoSensorAnterior=false;
 /*
  * estadoNodo
-2 cerrado           estadoSensor=false
 1 abierto           estadoSensor=true
-4 pendiente cerrar  estadoSensor=true
+2 cerrado           estadoSensor=false
 3 pendiente abrir   estadoSensor=false
+4 pendiente cerrar  estadoSensor=true
 */
    
-   boolean estado=false;
+boolean estado=false;
 
 //----prototipo de funciones-------
 void mfrc522init(void);
@@ -411,17 +411,4 @@ void sensorInit(){
   estado=estadoSensor;
   //attachInterrupt(digitalPinToInterrupt(this->sensor), interrupt, CHANGE);
 }
-/*
-ESTADOS
 
--CERRADA
-  --QUERES ABRIRLA ->PASAS TARJETA
-    ---ATORIZADO->QUEDA CERRADA ->PENDIENTE DE ABRIR
-        ---ABRE LA PUERTA ->ABIERTA
-    ---AUTORIZADO->SE ABRE ->ABIERTA
-    ---NO AUTORIZADO ->CERRADA ->CERRADO
-
--ABIERTA
-  --QUERES CERRARLA ->PASAS TARJETA
-    ---
-*/
