@@ -13,8 +13,8 @@ MultipaseCore::MultipaseCore()
 {
   ledRojo   = 43;// pin 43
   ledVerde  = 41;// pin 41
-  buzzer    = 45;  // speaker or buzzer
-  ledAmarillo = 46; // pin 46
+  buzzer    = 47;  // pin 47 speaker or buzzer
+  ledAmarillo = 45; // pin 45
 }
 
 /**

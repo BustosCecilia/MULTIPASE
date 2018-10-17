@@ -15,7 +15,7 @@ class MultipaseCore
     //LEDS
    int ledRojo;// pin 43
    int ledVerde;//pin 41
-   int ledAmarillo; // pin 46
+   int ledAmarillo; // pin 47
    int buzzer;  // speaker or buzzer on pin 8
 
    
