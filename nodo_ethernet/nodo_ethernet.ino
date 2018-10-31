@@ -1,43 +1,8 @@
 /**
  * MULTIPASE Nodo Ethernet
- * 
- * ----------esquema sensor interrupt-----------------
- * Sensor normal cerrado NC configurado con resistencia PULLUP en pin 21
- * 
- *                        _vcc
- *                        |
- *             R pullup   R     SW
- *                        |    _|_PUERTA ABIERTA (chequear esto)
- * Arduino pin 21 ]_______|___.   ._____
- *                          |___||__|   |
- *                 filtro      +||      |
- *               antirrebote    C=1uF   |
- *                                      |
- *                                    __|__
- *                                     ___
- *                                      _
- *                                    
- *                        _vcc
- *                        |
- *                        R
- *                        |       PUERTA CERRADA
- * Arduino pin 21 ]_______|___._|_._____
- *                          |___||__|   |
- *                             +||      |
- *                              C       |
- *                                      |
- *                                    __|__
- *                                     ___
- *                                      _                          
- * ---------------------------------------------------
  */
+
 #include "MultipaseCore.h"
-#include "ArduinoHttpClient.h"
-#include <SPI.h>
-#include <MFRC522.h>  // mfrc522 module library
-#include <Wire.h>  // i2C/1-wire library
-#include <SD.h>  // SD card library
-#include <Ethernet.h>
 
 //----declaración de pines-------
 //RFID
@@ -58,10 +23,10 @@ boolean estadoSensorAnterior=false;
    
    boolean estado=false;
    int cont_conexion=0; // cuenta la cantidad de veces que no se pudo conectar al contador si llega a 5 que mande un mensaje 
+
 //----prototipo de funciones-------
-void mfrc522init(void);
+//void mfrc522init(void);
 void ESPinit(void);
-void printWifiStatus(void);
 
 void solicitarAccion(String code);
 void estadoCerradura(int statusCode);
@@ -105,10 +70,7 @@ void setup() {
   while (!Serial) {
     ; // wait for serial port to connect. Needed for native USB port only
   }
-  //SPI.begin();  // run SPI library first; if not, mfrc522 will not work
-  //mfrc522.PCD_Init();  // initializing mfrc522, start mfrc522 library
   mfrc522init(); //inicializa el mfrc522
-  //ESPinit();  //se conecta a la red de WIFI
 
    // start the Ethernet connection:
   if (Ethernet.begin(mac) == 0) {
@@ -151,11 +113,10 @@ void printIPAddress(){
 void mfrc522init(void){
   SPI.begin();        // Init SPI bus
   mfrc522.PCD_Init();  // initializing mfrc522, start mfrc522 library
-  //mfrc522.PCD_Init(SS_PIN, RST_PIN); // Init MFRC522 card
-  //mfrc522.PCD_Init(); // Init MFRC522 card
   Serial.print(F("Reader "));
   mfrc522.PCD_DumpVersionToSerial();
 }
+
 
 /**
  * @brief      Lee un tag.
